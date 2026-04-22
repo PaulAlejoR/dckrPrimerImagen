@@ -1,5 +1,5 @@
 # /app /usr /lib
-FROM node:19.2-alpine3.16
+FROM node:20-alpine3.16
 
 # esto es como cd a /app
 WORKDIR /app
@@ -23,9 +23,11 @@ COPY package.json ./
 # Se instala las dependencias
 RUN npm install
 
+# Destino /app
+COPY . .
 
-COPY app.js ./
-
+# Realizar testing, comando para las pruebas
+RUN npm run test
 
 # Comando run de la imagen
 CMD [ "node", "app.js" ]
