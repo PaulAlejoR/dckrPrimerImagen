@@ -9,8 +9,8 @@ describe('syncDB task', () => {
         
         syncDB();
         const times = syncDB();
+        expect( times ).toBe(2);
 
-        expect( times ).toBe(2); 
     });
 
 });
