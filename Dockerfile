@@ -24,6 +24,7 @@ COPY package.json ./
 RUN npm install
 
 # Destino /app
+# Este COPY es un parche temporal ya que agrega todo lo que tenga el directorio actual donde esta el Dockerfile y lo agrega en el directorio del contenedor que es /app
 COPY . .
 
 # Realizar testing, comando para las pruebas
