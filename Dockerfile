@@ -1,6 +1,9 @@
 # /app /usr /lib
+# Línea para el forzado de la construcción de imagen en alguna arquitectura no nativa
 # FROM --platform=arm64 node:20-alpine3.16
-FROM node:20-alpine3.16
+# Línea para poder agregar más arquitecturas de nuestro buildx 
+FROM --platform=$BUILDPLATFORM node:20-alpine3.16
+# FROM node:20-alpine3.16
 
 # esto es como cd a /app
 WORKDIR /app
