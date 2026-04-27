@@ -1,4 +1,5 @@
 # /app /usr /lib
+# FROM --platform=arm64 node:20-alpine3.16
 FROM node:20-alpine3.16
 
 # esto es como cd a /app
@@ -33,7 +34,7 @@ RUN npm run test
 # Despues de hacer el testing, se eliminan archivos y directorios innecesarios en PRODUCTION
 RUN rm -rf tests && rm -rf node_modules
 
-# Se vuelven a construir las dependencias pero solo las de prod
+# Se vuelven a construir las dependencias pero solo las de pr
 RUN npm install --prod
 
 
