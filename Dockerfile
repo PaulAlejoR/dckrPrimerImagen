@@ -1,53 +1,37 @@
-# BUILDX
-# docker buildx build --platform linux/amd64,linux/arm64 -t elsopas/cron-ticker:latest --push .
-
+# 1 Primer stage: deps que solo se encarga de instalar las dependencias
+# cada stage se identifica con la palabra AS y el nombre del stage, en este caso deps
 # /app /usr /lib
-# Línea para el forzado de la construcción de imagen en alguna arquitectura no nativa
-# FROM --platform=arm64 node:20-alpine3.16
-
-
-# Línea para poder agregar más arquitecturas de nuestro buildx 
-#FROM --platform=$BUILDPLATFORM node:20-alpine3.16
-
-# BUILDX
-# Opción para no ocupar la variable y hacer la construcción usando buildx 
-FROM node:20-alpine3.16
-
+FROM node:20-alpine3.16 as deps
 # esto es como cd a /app
 WORKDIR /app
-
-# el source es el código que hace que funcione con configuraciones, etc.
-# el destino es el último lugar donde se va a colocar
-# con ./ se esta apuntando a que el destino sea /app
-#COPY app.js package.json ./
-
-# DOCKER CONSTUYE UNA IMAGEN EN CAPAS (INSTRUCCIONES DE ESTE ARCHIVO) Y CADA CAPA SE GUARDA EN CACHE, SI UNA INSTRUCCIÓN (CAPA) NO CAMBIA
-# SE SALTA ESA CAPA Y TODAS LAS DEMAS CAPAS DESPUES DE ESA SE VUELVEN A EJECUTAR, POR ESO EL ORDEN IMPORTA Y SE PONEN LAS INSTRUCCIONES QUE MENOS CAMBIAN
-# Y DESPUÉS LAS QUE CAMBIAN MÁS COMO EL CÓDIGO.
-
-
-# Por esa razón se separo la instrucción COPY app.js package.json ./ porque esta es una sola instrucción y primero revisa el código si tuvo cambios y se reconstruye
-# y si el segundo archivo no tuvo cambios tiene que volver a instalar dependencias porque esta atada a la instrucción.
-
-
 COPY package.json ./
-
 # Se instala las dependencias
 RUN npm install
 
-# Destino /app
-# Este COPY es un parche temporal ya que agrega todo lo que tenga el directorio actual donde esta el Dockerfile y lo agrega en el directorio del contenedor que es /app
-COPY . .
 
-# Realizar testing, comando para las pruebas
+# 2 Segundo stage: builder, se encarga de copiar los archivos y hacer el testing
+FROM node:20-alpine3.16 as builder
+WORKDIR /app
+# También se puede usar ./ para indicar el directorio 
+# Esta línea copia todo lo que tuvimos en el stage 'deps' del directorio /app/node_modules y lo copia en el directorio /app/node_modules del stage 'builder'
+COPY --from=deps /app/node_modules /app/node_modules
+COPY . .
 RUN npm run test
 
-# Despues de hacer el testing, se eliminan archivos y directorios innecesarios en PRODUCTION
-RUN rm -rf tests && rm -rf node_modules
 
-# Se vuelven a construir las dependencias pero solo las de pr
+# 3 Tercer stage: production, se encarga de instalar y descargar las dependencias de producción
+FROM node:20-alpine3.16 as prod-deps
+WORKDIR /app
+COPY package.json ./
 RUN npm install --prod
 
 
+# 4 Cuarto stage: runner, se encarga de copiar las dependencias de producción y ejecutar la aplicación
+FROM node:20-alpine3.16 as runner
+WORKDIR /app
+COPY --from=prod-deps /app/node_modules /app/node_modules
+COPY app.js ./
+# Se copia el directorio del host al contenedor, creando el directorio con el mismo nombre y se copian los archivos
+COPY tasks/ ./tasks
 # Comando run de la imagen
 CMD [ "node", "app.js" ]
